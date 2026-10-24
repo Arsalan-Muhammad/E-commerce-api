@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>My Store</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+</head>
+<body>
+    <h1>My Store</h1>
+    <h2>Available Products</h2>
+
+    <div class="products-container">
+        {% for product in products %}
+            <div class="product">
+                <h3 class="p1">{{ product.name }}</h3>
+                <p class="ps">Price: {{ product.price }}</p>
+
+                <form action="/cart/add/{{ product.id }}" method="post">
+                    <button class="add" type="submit">Add to Cart</button>
+                </form>
+            </div>
+        {% else %}
+            <p>No products available.</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
