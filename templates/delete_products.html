@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Delete Product</title>
+    <style>
+        body { font-family: sans-serif; margin: 0; display: flex; height: 100vh; }
+        .sidebar { width: 220px; background: #2c3e50; color: white; padding: 20px; }
+        .sidebar a { color: white; display: block; padding: 10px; text-decoration: none; border-radius: 4px; margin-bottom: 5px; }
+        .sidebar a.active { background: #34495e; }
+        .main-content { flex: 1; padding: 30px; background: #f4f6f7; overflow-y: auto; }
+        .form-box { background: white; padding: 20px; border-radius: 8px; max-width: 400px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .success-banner { background: #d4edda; color: #155724; padding: 10px; margin-bottom: 15px; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="sidebar">
+        <h2>Admin Menu</h2>
+        <hr>
+        <a href="/dashboard">📦 Add Products</a>
+        <a href="/admin/products/view">📦 View products</a>
+        <a href="/admin/products/update-page">📦 Update product</a>
+        <a href="/admin/delete/products-page" class="active">📦 Delete product</a>
+    </div>
+    <div class="main-content">
+        <h1>Remove Product</h1>
+
+        {% if msg %}
+            <div class="success-banner">{{ msg }}</div>
+        {% endif %}
+
+        <div class="form-box">
+            <h3>Delete Existing Product</h3>
+            <form action="/admin/delete/products" method="POST">
+                <p>Product ID (To Delete):<br><input type="number" name="id" required style="width:100%; padding:5px; box-sizing: border-box;"></p>
+                <button type="submit" style="background:#d9534f; color:white; border:none; padding:10px 15px; cursor:pointer; border-radius:4px;">Delete Product</button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

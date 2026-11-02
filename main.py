@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, Depends , APIRouter
 import admincations
-import models , usersactions , admincations
+import models , usersactions , admincations , user
 from starlette.middleware.sessions import SessionMiddleware
 from database import Base, get_db, engine
 from sqlalchemy.orm import Session
@@ -20,3 +20,4 @@ Base.metadata.create_all(bind=engine)
 
 app.include_router(usersactions.router)
 app.include_router(admincations.router)
+app.include_router(user.router)
