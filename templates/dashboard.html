@@ -23,14 +23,13 @@
     </div>
     <div class="main-content">
         <h1>Dashboard Control Panel</h1>
-        
         {% if msg %}
-            <div class="success-banner">{{ msg }}</div>
+        <div class="success-banner">{{ msg }}</div>
         {% endif %}
-
         <div class="form-box">
             <h3>Add New Product</h3>
-            <form action="/admin/products/add" method="post">
+           <form action="/admin/products/add" method="post" enctype="multipart/form-data">
+                <p>Image:<br><input type="file" name="image" id="image" required></p>
                 <p>Product Name:<br><input type="text" name="name" required style="width:100%; padding:5px; box-sizing: border-box;"></p>
                 <p>Price ($):<br><input type="number" name="price" step="0.01" required style="width:100%; padding:5px; box-sizing: border-box;"></p>
                 <p>Quantity:<br><input type="number" name="quantity" required style="width:100%; padding:5px; box-sizing: border-box;"></p>

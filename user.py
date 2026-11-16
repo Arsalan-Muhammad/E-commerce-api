@@ -29,9 +29,9 @@ def create_user(
 
     hashed_password = ultis.hash_password(password)
 
-    new_user = models.users(
+    new_user = models.User(
         email=email,
-        password=hashed_password
+        hashed_password=hashed_password
     )
 
     db.add(new_user)
@@ -44,8 +44,8 @@ def create_user(
 @router.get("/users/{id}", response_model=schemas.UserOut)
 def get_user(request:Request , id: int, db: Session = Depends(get_db)):
 
-    user = db.query(models.users).filter(
-        models.users.id == id
+    user = db.query(models.User).filter(
+        models.User.id == id
     ).first()
 
     if not user:

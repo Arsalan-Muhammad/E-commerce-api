@@ -1,12 +1,19 @@
-from fastapi import APIRouter, Form, HTTPException, Request, status, Depends
+from fastapi import APIRouter, Form, HTTPException, Request, status, Depends, FastAPI, UploadFile, File
 from fastapi.responses import RedirectResponse
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
+from pathlib import Path
+import shutil
 import models
+import uuid
 from database import get_db
-router = APIRouter()
-templates = Jinja2Templates(directory="templates")
 
+router = APIRouter()
+
+UPLOAD_DIR = Path("./uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+templates = Jinja2Templates(directory="templates")
 ADMIN_EMAIL = "admin@gmail.com"
 ADMIN_PASSWORD = "admin@512"
 
@@ -33,6 +40,7 @@ def show_dashboard(request: Request):
 @router.post("/admin/products/add")
 def add_product(
     request: Request,
+    image: UploadFile = File(...),
     name: str = Form(...),
     price: float = Form(...),
     quantity: int = Form(...),
@@ -42,12 +50,26 @@ def add_product(
     if session != "authenticated":
         return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
     
-    new_product = models.products(name=name, price=price, stock=quantity)
+
+    filename = image.filename if image.filename else "uploaded_product.png"
+    file_path = UPLOAD_DIR / filename
+    
+  
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(image.file, buffer)
+
+   
+    new_product = models.Product(
+        name=name, 
+        price=price, 
+        stock=quantity,
+        image_url=str(file_path)
+    )
     db.add(new_product)
     db.commit()
     
     return templates.TemplateResponse(request, "dashboard.html", {
-        "request": request, 
+        "request": request,
         "msg": "🎉 Product added successfully!"
     })
 
@@ -56,10 +78,9 @@ def view_products_page(request: Request, db: Session = Depends(get_db)):
     session = request.cookies.get("admin_session")
     if session != "authenticated":
         return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
-    
-    all_products = db.query(models.products).all()
+    all_products = db.query(models.Product).all()
     return templates.TemplateResponse(request, "view_products.html", {
-        "request": request, 
+        "request": request,
         "products": all_products
     })
 
@@ -70,9 +91,11 @@ def update_products_page(request: Request):
         return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
     return templates.TemplateResponse(request, "update_product.html", {"request": request})
 
+
 @router.post("/admin/update/products")
 def update_product_action(
     request: Request,
+    image: UploadFile = File(...),
     id: int = Form(...),
     name: str = Form(...),
     price: float = Form(...),
@@ -80,28 +103,58 @@ def update_product_action(
     db: Session = Depends(get_db)
 ):
     session = request.cookies.get("admin_session")
+
     if session != "authenticated":
-        return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
+        return RedirectResponse(
+            "/admin-login-page",
+            status_code=303
+        )
 
-    product = db.query(models.products).filter(models.products.id == id).first()
+    product = db.query(models.Product).filter(
+        models.Product.id == id
+    ).first()
+
     if not product:
-        return templates.TemplateResponse(request, "update_product.html", {
-            "request": request,
-            "msg": f"Product with id {id} does not exist."
-        })
+        return templates.TemplateResponse(
+            request,
+            "update_product.html",
+            {
+                "request": request,
+                "msg": f"Product with id {id} does not exist."
+            }
+        )
 
-    product.name = name #pyright:ignore
-    product.price = price #pyright:ignore
+    # Update product details
+    product.name = name      #pyright:ignore
+    product.price = price    #pyright:ignore
     product.stock = quantity #pyright:ignore
+
+    # Update image if a new image was uploaded
+    if image.filename:
+        extension = Path(image.filename).suffix
+        filename = f"{uuid.uuid4()}{extension}"
+
+        file_path = UPLOAD_DIR / filename
+
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(image.file, buffer)
+
+        product.image_url = f"/uploads/{filename}"
+
     db.commit()
 
-    return templates.TemplateResponse(request, "update_product.html", {
-        "request": request,
-        "msg": f"Product {id} updated successfully!"
-    })
+    return templates.TemplateResponse(
+        request,
+        "update_product.html",
+        {
+            "request": request,
+            "msg": f"Product {id} updated successfully!"
+        }
+    )
+
 
 @router.get("/admin/delete/products-page")
-def delete_products_page(request: Request):
+def delete_product_page(request: Request):
     session = request.cookies.get("admin_session")
     if session != "authenticated":
         return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
@@ -109,26 +162,25 @@ def delete_products_page(request: Request):
 
 @router.post("/admin/delete/products")
 def delete_product(
-    request: Request, 
-    id: int = Form(...), 
+    request: Request,
+    id: int = Form(...),
     db: Session = Depends(get_db)
 ):
     session = request.cookies.get("admin_session")
     if session != "authenticated":
         return RedirectResponse(url="/admin-login-page", status_code=status.HTTP_303_SEE_OTHER)
-
-    product = db.query(models.products).filter(models.products.id == id).first()
     
+    product = db.query(models.Product).filter(models.Product.id == id).first()
     if not product:
         return templates.TemplateResponse(request, "delete_products.html", {
-            "request": request, 
+            "request": request,
             "msg": f"Product with id {id} does not exist."
         })
     
-    db.delete(product) 
+    db.delete(product)
     db.commit()
     
     return templates.TemplateResponse(request, "delete_products.html", {
-        "request": request, 
-        "msg": f"Product {id} deleted successfully!" 
+        "request": request,
+        "msg": f"Product {id} deleted successfully!"
     })

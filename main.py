@@ -1,7 +1,7 @@
 
 from fastapi import FastAPI, Depends , APIRouter
 import admincations
-import models , usersactions , admincations , user
+import models , usersactions , admincations , user , auth , payment
 from starlette.middleware.sessions import SessionMiddleware
 from database import Base, get_db, engine
 from sqlalchemy.orm import Session
@@ -9,6 +9,9 @@ from fastapi.staticfiles import StaticFiles
 
 app = FastAPI()
 
+from fastapi.staticfiles import StaticFiles
+
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 app.add_middleware(
     SessionMiddleware,
     secret_key="21212121212"
@@ -21,3 +24,5 @@ Base.metadata.create_all(bind=engine)
 app.include_router(usersactions.router)
 app.include_router(admincations.router)
 app.include_router(user.router)
+app.include_router(payment.router)
+app.include_router(auth.router)

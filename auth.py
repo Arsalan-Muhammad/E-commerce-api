@@ -1,17 +1,62 @@
-from fastapi import Depends , responses , status , HTTPException , APIRouter
+from fastapi import Depends, HTTPException, status, APIRouter, Request, Form
+from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
-import  database , schemas , models , ultis , auths
-from fastapi.security import OAuth2PasswordRequestForm
-router = APIRouter(tags=['Authentication'])
 
-@router.post("/login" , response_model=schemas.Token)
-def login(user_credentials: OAuth2PasswordRequestForm = Depends() , db: Session =  Depends(database.get_db)):
-    user = db.query(models.users).filter(models.users.email == user_credentials.username).first()
+import database, schemas, models, ultis, auths
+
+router = APIRouter(tags=["Authentication"])
+templates = Jinja2Templates(directory="templates")
+
+
+@router.get("/login", response_class=HTMLResponse)
+def get_login_page(request: Request):
+    return templates.TemplateResponse(
+        request,
+        "login.html",
+        {"request": request}
+    )
+
+
+@router.post("/login")
+def login(
+    email: str = Form(...),
+    password: str = Form(...),
+    db: Session = Depends(database.get_db)
+):
+
+    user = db.query(models.User).filter(
+        models.User.email == email
+    ).first()
+
     if not user:
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN , detail="Invalid Credentials")
-    
-    if not ultis.verify(user_credentials.password , user.password):
-        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN , detail="Hashed Password")
-    
-    access_token = auths.create_access_token(data = {"user_id" : user.id})
-    return {"access_token" : access_token , "token_type" : "bearer"}
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid Credentials"
+        )
+
+    if not ultis.verify(password, user.password):
+        raise HTTPException(
+            status_code=403,
+            detail="Invalid Credentials"
+        )
+
+    access_token = auths.create_access_token(
+        data={"user_id": user.id}
+    )
+
+    response = RedirectResponse(
+        url=f"/products",
+        status_code=303
+    )
+
+    response.set_cookie(
+        key="access_token",
+        value=access_token,
+        httponly=True,
+        secure=False,
+        samesite="lax",
+        max_age=14400
+    )
+
+    return response

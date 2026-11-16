@@ -1,27 +1,153 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>My Store</title>
-    <link rel="stylesheet" href="{{ url_for('static', path='/style.css') }}">
+    <title>Products</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f5f7; padding: 30px; margin: 0; }
+        h1 { text-align: center; }
+        .products { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; max-width: 1000px; margin: 30px auto; }
+        .product { background: white; padding: 20px; border-radius: 12px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .product img { width: 180px; height: 180px; object-fit: contain; }
+        .cart-link { display: block; text-align: center; margin: 20px; font-weight: bold; }
+
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        .action-btn { background: #222; color: white; border: none; padding: 12px 18px; border-radius: 7px; cursor: pointer; font-size: 14px; }
+        .action-btn:hover { background: #444; }
+        .checkout-btn { background: #0070f3; }
+        .checkout-btn:hover { background: #005bb5; }
+
+        /* Sidebar Overlay & Panel */
+        .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0, 0, 0, 0.5); z-index: 999; }
+        .overlay.active { display: block; }
+
+        .sidebar { position: fixed; top: 0; right: -380px; width: 320px; height: 100%; background: white; box-shadow: -4px 0 15px rgba(0,0,0,0.15); padding: 25px; box-sizing: border-box; transition: right 0.3s ease; z-index: 1000; display: flex; flex-direction: column; }
+        .sidebar.active { right: 0; }
+
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #eee; padding-bottom: 15px; }
+        .close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #555; }
+
+        .sidebar-product { text-align: center; margin-top: 25px; }
+        .sidebar-product img { width: 140px; height: 140px; object-fit: contain; }
+        .sidebar-price { font-size: 18px; font-weight: bold; color: #0070f3; margin: 8px 0; }
+        .sidebar-stock { font-size: 13px; color: #666; }
+
+        .qty-box { display: inline-flex; align-items: center; border: 1px solid #ccc; border-radius: 8px; overflow: hidden; margin: 20px 0; }
+        .qty-btn { background: #eee; color: #222; border: none; padding: 10px 16px; font-size: 18px; font-weight: bold; cursor: pointer; }
+        .qty-btn:hover { background: #ddd; }
+        .qty-input { width: 50px; border: none; text-align: center; font-size: 16px; font-weight: bold; outline: none; }
+        .qty-input::-webkit-inner-spin-button, .qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        .total-row { display: flex; justify-content: space-between; font-size: 18px; font-weight: bold; border-top: 1px solid #eee; padding-top: 15px; margin-top: auto; margin-bottom: 15px; }
+        .confirm-btn { width: 100%; background: #0070f3; color: white; border: none; padding: 14px; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        .confirm-btn:hover { background: #005bb5; }
+    </style>
 </head>
 <body>
-    <h1>My Store</h1>
-    <h2>Available Products</h2>
+    <h1>Our Products</h1>
+    <h1>70% Sale</h1>
+    <a class="cart-link" href="/cart">View Cart</a>
 
-    <div class="products-container">
+    <div class="products">
         {% for product in products %}
-            <div class="product">
-                <h3 class="p1">{{ product.name }}</h3>
-                <p class="ps">Price: {{ product.price }}</p>
+        <div class="product">
+            <img src="{{ product.image_url }}" alt="{{ product.name }}">
+            <h2>{{ product.name }}</h2>
+            <p>Rs. {{ product.price }}</p>
+            <p>Stock: {{ product.stock }}</p>
 
-                <form action="/cart/add/{{ product.id }}" method="post">
-                    <button class="add" type="submit">Add to Cart</button>
+            <div class="btn-group">
+                <form action="/cart/add/{{ product.id }}" method="POST">
+                    <button type="submit" class="action-btn">Add to Cart</button>
                 </form>
+
+                <button type="button" class="action-btn checkout-btn"
+                    onclick="openCheckoutSidebar('{{ product.id }}', '{{ product.name }}', {{ product.price }}, {{ product.stock }}, '{{ product.image_url }}')">
+                    Checkout Item
+                </button>
             </div>
-        {% else %}
-            <p>No products available.</p>
+        </div>
         {% endfor %}
     </div>
+
+    <!-- Dark Background Overlay -->
+    <div id="overlay" class="overlay" onclick="closeCheckoutSidebar()"></div>
+
+    <!-- Checkout Quantity Sidebar -->
+    <div id="checkout-sidebar" class="sidebar">
+        <div class="sidebar-header">
+            <h3 style="margin: 0;">Select Quantity</h3>
+            <button type="button" class="close-btn" onclick="closeCheckoutSidebar()">&times;</button>
+        </div>
+
+        <div class="sidebar-product">
+            <img id="sb-img" src="" alt="">
+            <h3 id="sb-name"></h3>
+            <p class="sidebar-price">Rs. <span id="sb-price"></span> each</p>
+            <p class="sidebar-stock">Available Stock: <span id="sb-stock"></span></p>
+
+            <div class="qty-box">
+                <button type="button" class="qty-btn" onclick="changeSidebarQty(-1)">-</button>
+                <input id="sb-qty-display" class="qty-input" type="number" value="1" min="1" readonly>
+                <button type="button" class="qty-btn" onclick="changeSidebarQty(1)">+</button>
+            </div>
+        </div>
+
+        <div class="total-row">
+            <span>Total:</span>
+            <span>Rs. <span id="sb-total"></span></span>
+        </div>
+
+        <form action="/create/checkout" method="POST">
+            <input type="hidden" id="sb-product-id" name="product_id" value="">
+            <input type="hidden" id="sb-quantity" name="quantity" value="1">
+            <button type="submit" class="confirm-btn">Proceed to Payment</button>
+        </form>
+    </div>
+
+    <script>
+        let currentPrice = 0;
+        let currentMaxStock = 1;
+
+        function openCheckoutSidebar(id, name, price, stock, imageUrl) {
+            currentPrice = parseFloat(price);
+            currentMaxStock = parseInt(stock);
+
+            document.getElementById('sb-product-id').value = id;
+            document.getElementById('sb-name').innerText = name;
+            document.getElementById('sb-price').innerText = currentPrice;
+            document.getElementById('sb-stock').innerText = currentMaxStock;
+            document.getElementById('sb-img').src = imageUrl;
+
+            document.getElementById('sb-qty-display').value = 1;
+            document.getElementById('sb-quantity').value = 1;
+            updateTotal();
+
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('checkout-sidebar').classList.add('active');
+        }
+
+        function closeCheckoutSidebar() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('checkout-sidebar').classList.remove('active');
+        }
+
+        function changeSidebarQty(delta) {
+            const displayInput = document.getElementById('sb-qty-display');
+            const hiddenInput = document.getElementById('sb-quantity');
+            let current = parseInt(displayInput.value) || 1;
+            let next = current + delta;
+
+            if (next >= 1 && next <= currentMaxStock) {
+                displayInput.value = next;
+                hiddenInput.value = next;
+                updateTotal();
+            }
+        }
+
+        function updateTotal() {
+            const qty = parseInt(document.getElementById('sb-qty-display').value) || 1;
+            document.getElementById('sb-total').innerText = (currentPrice * qty).toFixed(2);
+        }
+    </script>
 </body>
 </html>

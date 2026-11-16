@@ -31,7 +31,8 @@
 
         <div class="form-box">
             <h3>Update Existing Product</h3>
-            <form action="/admin/delete/products" method="post">
+            <form action="/admin/update/products" method="post" enctype="multipart/form-data">
+                <p>Image:<br><input type="file" name="image" id="image" required></p>
                 <p>Product ID (To Update):<br><input type="number" name="id" required style="width:100%; padding:5px; box-sizing: border-box;"></p>
                 <p>New Product Name:<br><input type="text" name="name" required style="width:100%; padding:5px; box-sizing: border-box;"></p>
                 <p>New Price ($):<br><input type="number" name="price" step="0.01" required style="width:100%; padding:5px; box-sizing: border-box;"></p>

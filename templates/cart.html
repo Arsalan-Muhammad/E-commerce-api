@@ -1,28 +1,217 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>My Cart</title>
-    <link rel="stylesheet"
-          href="{{ url_for('static', path='/style.css') }}">
+    <title>My Shopping Cart</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f4f5f7;
+            margin: 0;
+            padding: 30px;
+        }
+
+        .container {
+            max-width: 950px;
+            margin: auto;
+        }
+
+        h1 {
+            margin-bottom: 25px;
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            background: white;
+            padding: 20px;
+            margin-bottom: 15px;
+            border-radius: 12px;
+        }
+
+        .cart-item img {
+            width: 110px;
+            height: 110px;
+            object-fit: contain;
+        }
+
+        .details {
+            flex: 1;
+        }
+
+        .details h3 {
+            margin-top: 0;
+        }
+
+        .quantity {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .quantity form {
+            margin: 0;
+        }
+
+        .quantity button {
+            width: 38px;
+            height: 38px;
+            border: none;
+            border-radius: 7px;
+            background: #222;
+            color: white;
+            font-size: 22px;
+            cursor: pointer;
+        }
+
+        .quantity button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+
+        .remove {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 7px;
+            cursor: pointer;
+        }
+
+        .summary {
+            background: white;
+            padding: 22px;
+            border-radius: 12px;
+            text-align: right;
+            margin-top: 20px;
+        }
+
+        .summary h2 {
+            margin: 0;
+        }
+
+        .empty {
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        a {
+            display: inline-block;
+            margin-top: 20px;
+            color: #222;
+        }
+
+        @media (max-width: 650px) {
+            .cart-item {
+                flex-wrap: wrap;
+            }
+
+            .details {
+                min-width: 150px;
+            }
+        }
+    </style>
 </head>
+
 <body>
+
+<div class="container">
+
     <h1>My Shopping Cart</h1>
 
-    {% for item in items %}
-        <div class="product">
-            <h3>{{ item.product.name }}</h3>
-            <p>Quantity: {{ item.quantity }}</p>
-            <p>Price per item: {{ item.product.price }}</p>
-            <p>Subtotal: {{ item.subtotal }}</p>
+    {% if cart_items %}
+
+        {% for item in cart_items %}
+
+            <div class="cart-item">
+
+                        <img
+                            src="{{ item.image_url }}"
+                            alt="{{ item.name }}"
+                        >
+
+                        <div class="details">
+
+                            <h3>{{ item.name }}</h3>
+
+                            <p>Price: Rs. {{ item.price }}</p>
+
+                            <p>
+                                Subtotal:
+                                Rs. {{ item.price * item.quantity }}
+                            </p>
+
+                        </div>
+
+                        <div class="quantity">
+
+                            <form
+                                action="/cart/update/{{ item.id }}/decrease"
+                                method="POST"
+                            >
+                                <button type="submit">−</button>
+                            </form>
+
+                            <strong>{{ item.quantity }}</strong>
+
+                            <form
+                                action="/cart/update/{{ item.id }}/increase"
+                                method="POST"
+                            >
+                                <button
+                                    type="submit"
+                                    {% if item.quantity >= item.stock %}
+                                        disabled
+                                    {% endif %}
+                                >
+                                    +
+                                </button>
+                            </form>
+
+                        </div>
+
+                        <form
+                            action="/cart/delete/{{ item.id }}"
+                            method="POST"
+                        >
+                            <button class="remove" type="submit">
+                                Remove
+                            </button>
+                        </form>
+
+                    </div>
+
+                {% endfor %}
+
+                <div class="summary">
+
+                    <h2>Total: Rs. {{ total }}</h2>
+
+                </div>
+
+            {% else %}
+
+                <div class="empty">
+
+                    <h2>Your cart is empty!</h2>
+
+                    <p>Add some products to get started.</p>
+
+                </div>
+
+            {% endif %}
+
+            <a href="/products">← Continue Shopping</a>
+
         </div>
-    {% else %}
-        <p>Your cart is empty.</p>
-    {% endfor %}
 
-    <h2>Total: {{ total }}</h2>
-
-    <a href="/products-page">Continue Shopping</a>
-</body>
-</html>
+        </body>
+        </html>
