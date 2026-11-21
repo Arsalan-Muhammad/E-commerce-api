@@ -1,9 +1,10 @@
 from sqlalchemy import (
     Column, Integer, String, Boolean, Text,
-    ForeignKey, DateTime, Numeric , Float
+    ForeignKey, DateTime, Numeric, Float
 )
 from sqlalchemy.sql import func
 from database import Base
+
 
 class User(Base):
     __tablename__ = "users"
@@ -29,7 +30,6 @@ class Product(Base):
     updated_at = Column(DateTime, onupdate=func.now())
 
 
-
 class Cart(Base):
     __tablename__ = "carts"
 
@@ -50,7 +50,6 @@ class CartItem(Base):
     updated_at = Column(DateTime, onupdate=func.now())
 
 
-
 class Order(Base):
     __tablename__ = "orders"
 
@@ -63,7 +62,7 @@ class Order(Base):
     phone_number = Column(String(20), nullable=False)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())
-
+    stripe_session_id = Column(String(255), unique=True, index=True, nullable=True)
 
 
 class OrderItem(Base):
@@ -82,13 +81,13 @@ class Payment(Base):
     __tablename__ = "payments"
 
     id = Column(Integer, primary_key=True, index=True)
-    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
-    amount = Column(Numeric(10, 2), nullable=False)
-    currency = Column(String(3), default="PKR")
-    method = Column(String(30), nullable=False)
-    provider = Column(String(30), nullable=True)
-    stripe_payment_intent_id = Column(String(255), unique=True)
-    status = Column(String(30), default="pending")
-    created_at = Column(DateTime, server_default=func.now())
-    updated_at = Column(DateTime, onupdate=func.now())
+    order_id = Column(Integer, ForeignKey("orders.id"), nullable=False)
+    stripe_session_id = Column(String, unique=True, nullable=True)
+    stripe_payment_intent_id = Column(String, unique=True, nullable=True)
+    amount = Column(Integer, nullable=False)
+    currency = Column(String, default="usd")
+    status = Column(String, default="pending")
+    payment_method = Column(String, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())

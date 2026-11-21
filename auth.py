@@ -35,7 +35,7 @@ def login(
             detail="Invalid Credentials"
         )
 
-    if not ultis.verify(password, user.password):
+    if not ultis.verify(password, user.hashed_password):
         raise HTTPException(
             status_code=403,
             detail="Invalid Credentials"
